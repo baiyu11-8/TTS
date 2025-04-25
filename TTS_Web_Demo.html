@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文字转语音演示</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .container {
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        textarea {
+            width: 100%;
+            height: 150px;
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            resize: vertical;
+            font-size: 16px;
+        }
+        .control-panel {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 15px 0;
+            align-items: center;
+        }
+        select, button {
+            padding: 8px 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: white;
+            font-size: 14px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .status.success {
+            background-color: #dff0d8;
+            color: #3c763d;
+        }
+        .status.error {
+            background-color: #f2dede;
+            color: #a94442;
+        }
+        .status.loading {
+            background-color: #d9edf7;
+            color: #31708f;
+        }
+        .audio-container {
+            margin: 15px 0;
+        }
+        .reference-upload {
+            margin: 15px 0;
+        }
+        .upload-btn-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+        .upload-btn-wrapper input[type=file] {
+            font-size: 100px;
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+        }
+        .upload-btn {
+            border: 1px solid #ccc;
+            color: #555;
+            background-color: white;
+            padding: 8px 15px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        .file-name {
+            margin-left: 10px;
+            font-size: 14px;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <h1>文字转语音演示</h1>
+    <div class="container">
+        <h2>输入文本</h2>
+        <textarea id="text-input" placeholder="请输入要转换为语音的文本..."></textarea>
+        
+        <div class="reference-upload">
+            <h3>参考音频（用于语音克隆）</h3>
+            <p>上传一段包含目标说话人声音的短音频(WAV格式)，用于语音克隆。</p>
+            <div class="upload-btn-wrapper">
+                <button class="upload-btn">选择音频文件</button>
+                <input type="file" id="reference-upload" accept="audio/wav" />
+            </div>
+            <span class="file-name" id="file-name">未选择文件</span>
+        </div>
+        
+        <div class="control-panel">
+            <label for="language-select">语言:</label>
+            <select id="language-select">
+                <option value="zh-cn">中文</option>
+                <option value="en">英文</option>
+                <option value="ja">日文</option>
+                <option value="ko">韩文</option>
+                <option value="fr">法文</option>
+                <option value="de">德文</option>
+                <option value="es">西班牙文</option>
+                <option value="ru">俄文</option>
+            </select>
+            
+            <label for="model-select">模型:</label>
+            <select id="model-select">
+                <option value="xtts">XTTS (多语言)</option>
+                <option value="tacotron">Tacotron2 (中文)</option>
+                <option value="vits">VITS (中文)</option>
+            </select>
+            
+            <button id="generate-btn">生成语音</button>
+        </div>
+        
+        <div id="status-message" class="status" style="display: none;"></div>
+        
+        <div class="audio-container">
+            <h3>生成的语音</h3>
+            <audio id="audio-player" controls style="width: 100%;"></audio>
+            <div style="margin-top: 10px;">
+                <button id="download-btn" disabled>下载音频</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 监听文件上传
+        document.getElementById('reference-upload').addEventListener('change', function(e) {
+            const fileName = e.target.files[0] ? e.target.files[0].name : '未选择文件';
+            document.getElementById('file-name').textContent = fileName;
+        });
+
+        // 模拟API端点 - 实际使用中需要替换为真实的TTS服务端点
+        const API_ENDPOINT = 'http://localhost:5002/api/tts';
+        
+        // 生成语音
+        document.getElementById('generate-btn').addEventListener('click', async function() {
+            const generateBtn = this;
+            const downloadBtn = document.getElementById('download-btn');
+            const statusMessage = document.getElementById('status-message');
+            const audioPlayer = document.getElementById('audio-player');
+            
+            // 获取用户输入
+            const text = document.getElementById('text-input').value.trim();
+            const language = document.getElementById('language-select').value;
+            const model = document.getElementById('model-select').value;
+            const referenceFile = document.getElementById('reference-upload').files[0];
+            
+            // 验证输入
+            if (!text) {
+                showStatus('请输入要转换的文本', 'error');
+                return;
+            }
+            
+            // 禁用按钮并显示加载状态
+            generateBtn.disabled = true;
+            downloadBtn.disabled = true;
+            showStatus('正在生成语音，请稍候...', 'loading');
+            
+            try {
+                // 在实际应用中，这里会发送请求到真实的TTS API
+                // 由于这是一个演示，我们将模拟API响应
+                
+                // 模拟API请求延迟
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                // 模拟响应 - 实际使用中这里会真正调用API
+                // const formData = new FormData();
+                // formData.append('text', text);
+                // formData.append('language', language);
+                // if (referenceFile) {
+                //     formData.append('speaker_wav', referenceFile);
+                // }
+                
+                // const response = await fetch(API_ENDPOINT, {
+                //     method: 'POST',
+                //     body: formData
+                // });
+                
+                // if (!response.ok) {
+                //     throw new Error('API请求失败');
+                // }
+                
+                // const audioBlob = await response.blob();
+                
+                // 模拟成功 - 这里使用一个静态音频文件代替
+                // 在实际应用中，应该使用API返回的音频
+                const audioUrl = 'https://file-examples.com/storage/fef146f66e22539c39c93b4/2017/11/file_example_WAV_1MG.wav';
+                
+                // 更新音频播放器
+                audioPlayer.src = audioUrl;
+                
+                // 启用下载按钮
+                downloadBtn.disabled = false;
+                downloadBtn.onclick = function() {
+                    const a = document.createElement('a');
+                    a.href = audioUrl;
+                    a.download = 'tts_output.wav';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                };
+                
+                showStatus('语音生成成功！', 'success');
+            } catch (error) {
+                console.error('生成失败:', error);
+                showStatus('语音生成失败: ' + error.message, 'error');
+            } finally {
+                // 恢复按钮状态
+                generateBtn.disabled = false;
+            }
+        });
+        
+        // 显示状态消息
+        function showStatus(message, type) {
+            const statusElement = document.getElementById('status-message');
+            statusElement.textContent = message;
+            statusElement.className = 'status ' + type;
+            statusElement.style.display = 'block';
+        }
+        
+        // 实现与真实TTS API的集成
+        async function callRealTtsApi(text, language, speakerWav) {
+            // 创建FormData对象用于上传文件
+            const formData = new FormData();
+            formData.append('text', text);
+            formData.append('language_id', language);
+            
+            if (speakerWav) {
+                formData.append('speaker_wav', speakerWav);
+            }
+            
+            try {
+                const response = await fetch(API_ENDPOINT, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP错误 ${response.status}`);
+                }
+                
+                return await response.blob();
+            } catch (error) {
+                console.error('API调用失败:', error);
+                throw error;
+            }
+        }
+    </script>
+</body>
+</html> 

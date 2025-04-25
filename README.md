@@ -1,3 +1,60 @@
+# 文字转语音(TTS)集成方案
+
+本项目提供了一套完整的文字转语音(TTS)集成方案，帮助开发者在各种Web应用中实现高质量的语音合成功能。
+
+## 项目内容
+
+- **TTS_Integration_Guide.md** - 详细的集成指南文档
+- **TTS_Web_Demo.html** - 纯HTML/JS实现的Web演示
+- **TTS_Backend_Integration.py** - Python后端集成示例
+- **TTS_React_Integration.jsx** - React前端组件示例
+
+## 功能特点
+
+- 支持多种语言和多种说话人
+- 语音克隆功能
+- 同步/异步处理模式
+- 易于集成的API接口
+- 完整的前后端实现示例
+
+## 快速开始
+
+1. 安装Coqui TTS:
+   ```bash
+   pip install TTS
+   ```
+
+2. 启动TTS服务器:
+   ```bash
+   python -m TTS.server.server --model_name tts_models/multilingual/multi-dataset/xtts_v2
+   ```
+
+3. 使用前端组件或调用API接口来实现文字转语音功能。
+
+## 集成方式
+
+本项目提供了三种主要的集成方式:
+
+1. **直接使用Python API** - 适合Python应用或需要深度控制的场景
+2. **使用REST API服务** - 适合前后端分离的Web应用
+3. **使用Docker容器** - 适合容器化部署环境
+
+详细说明请参阅 [TTS_Integration_Guide.md](./TTS_Integration_Guide.md)。
+
+## 自定义与扩展
+
+- 可以根据需要选择不同的TTS模型
+- 支持通过参考音频实现语音克隆
+- 可以自定义语音参数如语速、语调等
+- 支持异步处理长文本
+
+## 许可证
+
+本项目基于Mozilla Public License 2.0开源。
+
+## 贡献
+
+欢迎通过Issue和Pull Request贡献代码和改进建议。
 
 ## 🐸Coqui.ai News
 - 📣 ⓍTTSv2 is here with 16 languages and better performance across the board.
